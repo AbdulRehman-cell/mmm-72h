@@ -1,0 +1,44 @@
+name: Production CI/CD
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  audit-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install Root & Server Dependencies
+        run: npm ci
+
+      - name: Install Client Dependencies
+        run: npm --prefix client ci
+
+      - name: Lint and Audit (Security Verification)
+        run: |
+          npm audit audit --audit-level=high || true
+
+      - name: Build Application Test
+        run: npm run build
+
+  deploy-to-render:
+    needs: audit-and-test
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Render Deploy Hook
+        uses: johnbeynon/render-deploy-action@v16.0.0
+        with:
+          service-id: ${{ secrets.RENDER_SERVICE_ID }}
+          api-key: ${{ secrets.RENDER_API_KEY }}

@@ -1,0 +1,27 @@
+services:
+  # The Web Service (Express API serving static React/Vite assets)
+  - type: web
+    name: mmm-web-app
+    env: docker
+    dockerfilePath: ./Dockerfile
+    plan: free # or starter depending on tier
+    region: oregon # options: oregon, frankfurt, singapore, ohio
+    envVars:
+      - key: PORT
+        value: 10000
+      - key: NODE_ENV
+        value: production
+      - key: MONGO_URI
+        fromDatabase:
+          name: mmm-database
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true # Securely generates a random secret key automatically on Render
+      - key: CORS_ORIGIN
+        value: https://mmm-web-app.onrender.com # Change to custom domain if needed
+
+databases:
+  # Managed Production MongoDB (Only available on paid plans, otherwise use MongoDB Atlas)
+  - name: mmm-database
+    databaseName: mmm_production
+    plan: free # Update to standard if database persistence is needed beyond 90 days on Render free tier
